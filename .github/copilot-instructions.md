@@ -1,0 +1,175 @@
+# HikBridge Laravel SDK — Copilot Instructions
+
+This repository is `nugsoft/hikbridge-laravel`, a Laravel 11+ SDK for the **HikBridge External Integration API** — a REST API that manages persons, biometrics, and access events across Hikvision access-control devices.
+
+## Package identity
+
+| | |
+|---|---|
+| Composer | `nugsoft/hikbridge-laravel` |
+| Namespace | `Nugsoft\HikBridge` |
+| Facade | `use Nugsoft\HikBridge\Facades\HikBridge;` |
+| Config file | `config/hikbridge.php` |
+| Env vars | `HIKBRIDGE_BASE_URL`, `HIKBRIDGE_API_KEY`, `HIKBRIDGE_TIMEOUT` |
+| Requires | PHP 8.2+, Laravel 11+ |
+
+## Auth
+
+Every request sends `HIKBRIDGE_API_KEY` as a Bearer token. Keys carry scoped abilities:
+`organization:read`, `devices:read`, `persons:read`, `persons:write`, `biometrics:read`, `biometrics:write`, `events:read`, `webhooks:manage`.
+
+A `ForbiddenException` (403) means the key lacks the required ability.
+
+## Return types
+
+- All methods return **plain PHP arrays** (decoded JSON).
+- Single resources: `{ "data": { ... } }`, lists: `{ "data": [...], "meta": { "next_cursor": "..." } }`.
+- Async (202) endpoints return a `PendingOperation` object, not an array.
+
+## API surface
+
+### Organization
+```php
+HikBridge::organization()->get(): array
+```
+
+### Devices
+```php
+HikBridge::devices()->list(array $params = []): array
+HikBridge::devices()->get(int $deviceId): array
+```
+
+### Persons
+```php
+HikBridge::persons()->list(array $params = []): array
+HikBridge::persons()->get(int $personId): array
+HikBridge::persons()->create(array $data): array|PendingOperation
+// No device_id → async fan-out to all devices → PendingOperation (202)
+// With device_id → sync to one device → array (201)
+HikBridge::persons()->update(int $personId, array $data): array
+HikBridge::persons()->delete(int $personId): PendingOperation        // always async
+HikBridge::persons()->deleteFromDevice(int $personId, int $deviceId): array
+```
+
+Person fields: `person_code` (required, unique), `first_name`, `last_name`, `status` (`active`|`inactive`).
+
+### Biometrics
+```php
+HikBridge::biometrics(int $personId)->summary(int $deviceId): array
+HikBridge::biometrics(int $personId)->uploadFace(int $deviceId, string $base64Image): array
+HikBridge::biometrics(int $personId)->captureFace(int $deviceId): array
+HikBridge::biometrics(int $personId)->faceCaptureProgress(int $deviceId): array
+HikBridge::biometrics(int $personId)->deleteFace(int $deviceId): array
+HikBridge::biometrics(int $personId)->storeFingerprint(int $deviceId, int $fingerIndex, ?string $template = null): array
+HikBridge::biometrics(int $personId)->captureFingerprint(int $deviceId, int $fingerIndex = 0): array
+HikBridge::biometrics(int $personId)->fingerprintCaptureProgress(int $deviceId): array
+HikBridge::biometrics(int $personId)->deleteFingerprint(int $deviceId, int $fingerIndex): array
+HikBridge::biometrics(int $personId)->addAccessCard(int $deviceId, string $cardNo, int $cardType = 1): array
+HikBridge::biometrics(int $personId)->deleteAccessCard(int $deviceId, string $cardNo): array
+```
+
+### Events
+```php
+HikBridge::events()->list(array $params = []): array
+// params: per_page, cursor, from (ISO8601), to (ISO8601), person_code, event_type, device_id
+HikBridge::events()->triggerSync(?string $from = null, ?string $to = null): array
+```
+
+### Webhooks
+```php
+HikBridge::webhooks()->list(): array
+HikBridge::webhooks()->get(int $webhookId): array
+HikBridge::webhooks()->create(array $data): array   // signing secret returned once only
+HikBridge::webhooks()->update(int $webhookId, array $data): array
+HikBridge::webhooks()->delete(int $webhookId): void
+HikBridge::webhooks()->sendTestPing(int $webhookId): array
+HikBridge::webhooks()->deliveries(int $webhookId): array
+```
+
+Webhook event types: `access.event`, `person.synced`, `*`. The `secret` (`whsec_...`) is returned by `create()` exactly once — store it immediately.
+
+### Operations
+```php
+HikBridge::operations()->get(string $operationId): array
+// data.status: pending | completed | failed
+// data.devices[]: per-device results
+```
+
+## PendingOperation
+
+Returned by any 202 response.
+
+```php
+$op->operationId        // string
+$op->data               // array — the entity being created/deleted
+$op->waitUntilDone(int $timeout = 60, int $interval = 2): array
+// Polls every $interval seconds; throws HikBridgeException on failure or timeout
+```
+
+## Exceptions
+
+All extend `Nugsoft\HikBridge\Exceptions\HikBridgeException`.
+
+| Class | HTTP |
+|---|---|
+| `AuthenticationException` | 401 |
+| `ForbiddenException` | 403 |
+| `NotFoundException` | 404 |
+| `ValidationException` | 422 — use `->errors()` |
+| `RateLimitException` | 429 |
+| `ServerException` | 5xx |
+
+## Testing
+
+Use `Http::fake()` — no custom mocking layer needed.
+
+```php
+Http::fake([
+    '*/v1/persons/57*' => Http::response(['data' => ['id' => 57]], 200),
+]);
+$person = HikBridge::persons()->get(57);
+expect($person['data']['id'])->toBe(57);
+```
+
+Fake async (202) flows:
+```php
+Http::fake([
+    '*/v1/persons'         => Http::response(['operation_id' => 'op_1', 'data' => []], 202),
+    '*/v1/operations/op_1' => Http::response(['data' => ['status' => 'completed']], 200),
+]);
+$op = HikBridge::persons()->create(['person_code' => 'EMP001', ...]);
+$op->waitUntilDone(timeout: 10, interval: 0);
+```
+
+## Source layout
+
+```
+src/
+  HikBridgeClient.php          ← HTTP layer + exception mapping
+  HikBridgeManager.php         ← facade target, instantiates resources
+  HikBridgeServiceProvider.php
+  PendingOperation.php         ← wraps 202 responses
+  Facades/HikBridge.php
+  Resources/
+    OrganizationResource.php
+    DeviceResource.php
+    PersonResource.php         ← handles sync vs async via response status
+    BiometricResource.php
+    EventResource.php
+    WebhookResource.php
+    OperationResource.php
+  Exceptions/
+    HikBridgeException.php     ← base class
+    AuthenticationException.php, ForbiddenException.php, NotFoundException.php
+    ValidationException.php    ← has ->errors()
+    RateLimitException.php, ServerException.php
+config/hikbridge.php
+tests/
+```
+
+## Adding a new endpoint
+
+1. Find the resource class in `src/Resources/` for that endpoint group.
+2. Add a method calling `$this->client->get/post/put/delete()`.
+3. If the endpoint may return 202, use `postRaw()`/`deleteRaw()`, check `$response->status() === 202`, and return a `PendingOperation`.
+4. Add a Pest test using `Http::fake()`.
