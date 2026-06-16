@@ -1,6 +1,6 @@
 # HikBridge Laravel SDK
 
-[![Tests](https://github.com/nugsoft/hikbridge-laravel/actions/workflows/tests.yml/badge.svg)](https://github.com/nugsoft/hikbridge-laravel/actions/workflows/tests.yml)
+[![Tests](https://github.com/nugsoft/hikbridge-laravel-sdk/actions/workflows/tests.yml/badge.svg)](https://github.com/nugsoft/hikbridge-laravel-sdk/actions/workflows/tests.yml)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)](https://php.net)
 [![Laravel](https://img.shields.io/badge/Laravel-11%2B-red)](https://laravel.com)
 
