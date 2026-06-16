@@ -1,0 +1,42 @@
+{
+    "name": "nugsoft/hikbridge-laravel",
+    "description": "Laravel SDK for the HikBridge External Integration API",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0",
+        "illuminate/http": "^11.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0",
+        "pestphp/pest": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nugsoft\\HikBridge\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nugsoft\\HikBridge\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Nugsoft\\HikBridge\\HikBridgeServiceProvider"
+            ],
+            "aliases": {
+                "HikBridge": "Nugsoft\\HikBridge\\Facades\\HikBridge"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
