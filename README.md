@@ -40,7 +40,7 @@ A Laravel SDK for the **HikBridge External Integration API** — a brand-agnosti
 ## Installation
 
 ```bash
-composer require nugsoft/hikbridge-laravel
+composer require nugsoft/hikbridge-laravel-sdk
 ```
 
 The service provider and `HikBridge` facade are auto-discovered by Laravel — no manual registration is needed.
