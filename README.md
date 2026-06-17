@@ -14,6 +14,7 @@ A Laravel SDK for the **HikBridge External Integration API** — a brand-agnosti
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [How It Works](#how-it-works)
+- [Demo Project](#demo-project)
 - [Authentication & Scopes](#authentication--scopes)
 - [Resources](#resources)
   - [Organization](#organization)
@@ -111,22 +112,33 @@ HikBridge::operations()->get('op_abc123');
 
 ---
 
+## Demo Project
+
+Get hands-on with the SDK through our demo project. You can either explore the source code or try the live hosted application:
+
+- **Source Repository:** [https://github.com/nugsoft/hikbridge-demo](https://github.com/nugsoft/hikbridge-demo) — a complete Laravel application showcasing the SDK in action
+- **Live Demo:** [https://hikbridge-demo.nugsoftstagging.com/](https://hikbridge-demo.nugsoftstagging.com/) — test the SDK features in a running environment
+
+The demo covers all major workflows including person management, biometric enrollment, access card registration, and webhook integration.
+
+---
+
 ## Authentication & Scopes
 
 Every request to `/v1/*` is authenticated with the API key set in `HIKBRIDGE_API_KEY`. The key is sent as `Authorization: Bearer hbk_...` automatically.
 
 Keys are scoped to a set of **abilities**. Attempting an endpoint the key is not scoped for returns a `ForbiddenException` (403).
 
-| Ability | Grants access to |
-|---|---|
-| `organization:read` | `GET /v1/organization` |
-| `devices:read` | `GET /v1/devices`, `GET /v1/devices/:id` |
-| `persons:read` | List, get, and poll operations |
-| `persons:write` | Create, update, delete persons |
-| `biometrics:read` | Biometric summaries, capture progress |
-| `biometrics:write` | Upload/delete face, fingerprints, access cards |
-| `events:read` | List and trigger event sync |
-| `webhooks:manage` | Full CRUD on webhook subscriptions |
+| Ability             | Grants access to                               |
+| ------------------- | ---------------------------------------------- |
+| `organization:read` | `GET /v1/organization`                         |
+| `devices:read`      | `GET /v1/devices`, `GET /v1/devices/:id`       |
+| `persons:read`      | List, get, and poll operations                 |
+| `persons:write`     | Create, update, delete persons                 |
+| `biometrics:read`   | Biometric summaries, capture progress          |
+| `biometrics:write`  | Upload/delete face, fingerprints, access cards |
+| `events:read`       | List and trigger event sync                    |
+| `webhooks:manage`   | Full CRUD on webhook subscriptions             |
 
 ---
 
@@ -408,11 +420,11 @@ Webhooks push signed payloads to an external URL when events occur in HikBridge.
 
 Supported event types:
 
-| Event type | When it fires |
-|---|---|
-| `access.event` | A person accesses a device |
+| Event type      | When it fires                     |
+| --------------- | --------------------------------- |
+| `access.event`  | A person accesses a device        |
 | `person.synced` | A person sync operation completes |
-| `*` | All event types |
+| `*`             | All event types                   |
 
 #### Create a subscription
 
@@ -529,10 +541,10 @@ try {
 }
 ```
 
-| Parameter | Default | Description |
-|---|---|---|
-| `$timeout` | `60` | Maximum seconds to wait before throwing |
-| `$interval` | `2` | Seconds between each poll |
+| Parameter   | Default | Description                             |
+| ----------- | ------- | --------------------------------------- |
+| `$timeout`  | `60`    | Maximum seconds to wait before throwing |
+| `$interval` | `2`     | Seconds between each poll               |
 
 > **Queues:** Async operations require the Laravel queue worker to be running. In local development, `php artisan queue:work` (or `composer dev` if configured) handles this.
 
@@ -542,15 +554,15 @@ try {
 
 All exceptions extend `Nugsoft\HikBridge\Exceptions\HikBridgeException`, so you can catch them individually or with the base class.
 
-| Exception | HTTP status | Notes |
-|---|---|---|
-| `AuthenticationException` | 401 | Invalid or missing API key |
-| `ForbiddenException` | 403 | Key lacks the required ability |
-| `NotFoundException` | 404 | Resource does not exist or belongs to another org |
-| `ValidationException` | 422 | Invalid input — call `->errors()` for field details |
-| `RateLimitException` | 429 | Too many requests |
-| `ServerException` | 5xx | HikBridge server error |
-| `HikBridgeException` | any | Base class; also thrown on operation failure/timeout |
+| Exception                 | HTTP status | Notes                                                |
+| ------------------------- | ----------- | ---------------------------------------------------- |
+| `AuthenticationException` | 401         | Invalid or missing API key                           |
+| `ForbiddenException`      | 403         | Key lacks the required ability                       |
+| `NotFoundException`       | 404         | Resource does not exist or belongs to another org    |
+| `ValidationException`     | 422         | Invalid input — call `->errors()` for field details  |
+| `RateLimitException`      | 429         | Too many requests                                    |
+| `ServerException`         | 5xx         | HikBridge server error                               |
+| `HikBridgeException`      | any         | Base class; also thrown on operation failure/timeout |
 
 ```php
 use Nugsoft\HikBridge\Exceptions\NotFoundException;
