@@ -2,6 +2,7 @@
 
 namespace Nugsoft\HikBridge;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Nugsoft\HikBridge\Exceptions\AuthenticationException;
@@ -86,8 +87,15 @@ class HikBridgeClient
             ->timeout($this->config['timeout'] ?? 30);
 
         if ($times > 0) {
-            // Retry only on connection-level exceptions, not on HTTP error responses.
-            $pending = $pending->retry($times, (int) ($retry['sleep'] ?? 100));
+            // Retry only on connection-level exceptions, not on HTTP error
+            // responses, and never let the retry helper throw — error responses
+            // must flow through to decode() so they map to typed exceptions.
+            $pending = $pending->retry(
+                $times,
+                (int) ($retry['sleep'] ?? 100),
+                fn ($exception) => $exception instanceof ConnectionException,
+                throw: false,
+            );
         }
 
         return $pending;

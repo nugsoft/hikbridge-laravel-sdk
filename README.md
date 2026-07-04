@@ -76,7 +76,9 @@ return [
     // HTTP timeout in seconds
     'timeout' => (int) env('HIKBRIDGE_TIMEOUT', 30),
 
-    // Automatic retry on transient failures (5xx, connection errors)
+    // Automatic retry on transient connection-level failures (timeouts,
+    // DNS/refused connections). HTTP error responses (4xx/5xx) are never
+    // retried — they are surfaced immediately as typed exceptions (see below).
     // Set 'times' to 0 to disable retries entirely
     'retry' => [
         'times' => 3,
@@ -84,6 +86,12 @@ return [
     ],
 ];
 ```
+
+> **Retries vs. error responses.** Retries apply only to `ConnectionException`
+> (the request never reached the server). Any HTTP response the server returns —
+> including `5xx` — flows straight through to the SDK's exception mapping, so a
+> `500`/`503` becomes a `ServerException` you can catch, not a raw HTTP-client
+> exception.
 
 ---
 
@@ -558,7 +566,7 @@ All exceptions extend `Nugsoft\HikBridge\Exceptions\HikBridgeException`, so you 
 | ------------------------- | ----------- | ---------------------------------------------------- |
 | `AuthenticationException` | 401         | Invalid or missing API key                           |
 | `ForbiddenException`      | 403         | Key lacks the required ability                       |
-| `NotFoundException`       | 404         | Resource does not exist or belongs to another org    |
+| `NotFoundException`       | 404         | Resource does not exist or belongs to another business |
 | `ValidationException`     | 422         | Invalid input — call `->errors()` for field details  |
 | `RateLimitException`      | 429         | Too many requests                                    |
 | `ServerException`         | 5xx         | HikBridge server error                               |

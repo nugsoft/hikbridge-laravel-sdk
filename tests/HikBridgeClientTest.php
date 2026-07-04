@@ -75,3 +75,14 @@ it('throws ServerException on 500', function () {
 
     $this->client->get('/v1/business');
 })->throws(ServerException::class);
+
+it('maps error responses to typed exceptions even when retry is enabled', function () {
+    // With retry > 0 the HTTP client must not throw a raw RequestException on
+    // an error response — it has to flow through to the SDK's exception mapping.
+    config()->set('hikbridge.retry', ['times' => 2, 'sleep' => 0]);
+    $client = new \Nugsoft\HikBridge\HikBridgeClient(config('hikbridge'));
+
+    Http::fake(['*' => Http::response(['message' => 'Service Unavailable.'], 503)]);
+
+    $client->get('/v1/business');
+})->throws(ServerException::class);

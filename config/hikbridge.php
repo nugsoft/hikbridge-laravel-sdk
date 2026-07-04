@@ -5,7 +5,7 @@ return [
   /*
      | Base URL of the HikBridge API, e.g. https://yourserver.com/api
      */
-  'base_url' => env('HIKBRIDGE_BASE_URL', 'https://devicebridge.blendsnpearls.com/api'),
+  'base_url' => env('HIKBRIDGE_BASE_URL', 'https://hikbridge.clocknesthr.com/api'),
 
   /*
      | Per-business API key (hbk_...). Sent as Authorization: Bearer on every request.
