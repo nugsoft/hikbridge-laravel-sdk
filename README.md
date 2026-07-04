@@ -68,7 +68,7 @@ The published `config/hikbridge.php` exposes additional options:
 ```php
 return [
     // Base URL of the HikBridge API (no trailing slash needed)
-    'base_url' => env('HIKBRIDGE_BASE_URL', 'https://devicebridge.blendsnpearls.com/api'),
+    'base_url' => env('HIKBRIDGE_BASE_URL', 'https://hikbridge.clocknesthr.com/api'),
 
     // Per-business API key (hbk_...) — sent as Authorization: Bearer on every request
     'api_key' => env('HIKBRIDGE_API_KEY'),
