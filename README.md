@@ -17,7 +17,7 @@ A Laravel SDK for the **HikBridge External Integration API** — a brand-agnosti
 - [Demo Project](#demo-project)
 - [Authentication & Scopes](#authentication--scopes)
 - [Resources](#resources)
-  - [Organization](#organization)
+  - [Business](#business)
   - [Devices](#devices)
   - [Persons](#persons)
   - [Biometrics](#biometrics)
@@ -70,13 +70,15 @@ return [
     // Base URL of the HikBridge API (no trailing slash needed)
     'base_url' => env('HIKBRIDGE_BASE_URL', 'https://devicebridge.blendsnpearls.com/api'),
 
-    // Per-organization API key (hbk_...) — sent as Authorization: Bearer on every request
+    // Per-business API key (hbk_...) — sent as Authorization: Bearer on every request
     'api_key' => env('HIKBRIDGE_API_KEY'),
 
     // HTTP timeout in seconds
     'timeout' => (int) env('HIKBRIDGE_TIMEOUT', 30),
 
-    // Automatic retry on transient failures (5xx, connection errors)
+    // Automatic retry on transient connection-level failures (timeouts,
+    // DNS/refused connections). HTTP error responses (4xx/5xx) are never
+    // retried — they are surfaced immediately as typed exceptions (see below).
     // Set 'times' to 0 to disable retries entirely
     'retry' => [
         'times' => 3,
@@ -84,6 +86,12 @@ return [
     ],
 ];
 ```
+
+> **Retries vs. error responses.** Retries apply only to `ConnectionException`
+> (the request never reached the server). Any HTTP response the server returns —
+> including `5xx` — flows straight through to the SDK's exception mapping, so a
+> `500`/`503` becomes a `ServerException` you can catch, not a raw HTTP-client
+> exception.
 
 ---
 
@@ -94,7 +102,7 @@ The SDK exposes a single `HikBridge` facade. Every method group is accessed thro
 ```php
 use Nugsoft\HikBridge\Facades\HikBridge;
 
-HikBridge::organization()->get();
+HikBridge::business()->get();
 HikBridge::devices()->list();
 HikBridge::persons()->get(57);
 HikBridge::biometrics(57)->uploadFace(35, $base64);
@@ -131,7 +139,7 @@ Keys are scoped to a set of **abilities**. Attempting an endpoint the key is not
 
 | Ability             | Grants access to                               |
 | ------------------- | ---------------------------------------------- |
-| `organization:read` | `GET /v1/organization`                         |
+| `business:read`     | `GET /v1/business`                             |
 | `devices:read`      | `GET /v1/devices`, `GET /v1/devices/:id`       |
 | `persons:read`      | List, get, and poll operations                 |
 | `persons:write`     | Create, update, delete persons                 |
@@ -144,23 +152,23 @@ Keys are scoped to a set of **abilities**. Attempting an endpoint the key is not
 
 ## Resources
 
-### Organization
+### Business
 
-Returns the single organization the API key belongs to.
+Returns the single business the API key belongs to. Requires ability `business:read`.
 
 ```php
-$org = HikBridge::organization()->get();
-// $org['data']['id'], $org['data']['name'], ...
+$business = HikBridge::business()->get();
+// $business['data']['id'], $business['data']['name'], ...
 ```
 
 ---
 
 ### Devices
 
-Devices are the access-control units registered to the organization. Every biometric operation requires a `device_id` from this list.
+Devices are the access-control units registered to the business. Every biometric operation requires a `device_id` from this list.
 
 ```php
-// List all devices in the organization
+// List all devices in the business
 $devices = HikBridge::devices()->list();
 
 foreach ($devices['data'] as $device) {
@@ -177,7 +185,7 @@ $device = HikBridge::devices()->get(35);
 
 ### Persons
 
-Persons are the people managed across the organization's devices. `person_code` is the cross-system identifier — it must be unique, alphanumeric, max 16 characters, and is **immutable after creation**.
+Persons are the people managed across the business's devices. `person_code` is the cross-system identifier — it must be unique, alphanumeric, max 16 characters, and is **immutable after creation**.
 
 #### List persons
 
@@ -558,7 +566,7 @@ All exceptions extend `Nugsoft\HikBridge\Exceptions\HikBridgeException`, so you 
 | ------------------------- | ----------- | ---------------------------------------------------- |
 | `AuthenticationException` | 401         | Invalid or missing API key                           |
 | `ForbiddenException`      | 403         | Key lacks the required ability                       |
-| `NotFoundException`       | 404         | Resource does not exist or belongs to another org    |
+| `NotFoundException`       | 404         | Resource does not exist or belongs to another business |
 | `ValidationException`     | 422         | Invalid input — call `->errors()` for field details  |
 | `RateLimitException`      | 429         | Too many requests                                    |
 | `ServerException`         | 5xx         | HikBridge server error                               |

@@ -16,7 +16,7 @@ beforeEach(function () {
 it('returns decoded json on get', function () {
     Http::fake(['*' => Http::response(['data' => ['id' => 1]], 200)]);
 
-    $result = $this->client->get('/v1/organization');
+    $result = $this->client->get('/v1/business');
 
     expect($result)->toBe(['data' => ['id' => 1]]);
 });
@@ -24,7 +24,7 @@ it('returns decoded json on get', function () {
 it('attaches bearer token to every request', function () {
     Http::fake(['*' => Http::response([], 200)]);
 
-    $this->client->get('/v1/organization');
+    $this->client->get('/v1/business');
 
     Http::assertSent(fn ($req) => $req->hasHeader('Authorization', 'Bearer hbk_test_key'));
 });
@@ -32,13 +32,13 @@ it('attaches bearer token to every request', function () {
 it('throws AuthenticationException on 401', function () {
     Http::fake(['*' => Http::response(['message' => 'Unauthenticated.'], 401)]);
 
-    $this->client->get('/v1/organization');
+    $this->client->get('/v1/business');
 })->throws(AuthenticationException::class);
 
 it('throws ForbiddenException on 403', function () {
     Http::fake(['*' => Http::response(['message' => 'Forbidden.'], 403)]);
 
-    $this->client->get('/v1/organization');
+    $this->client->get('/v1/business');
 })->throws(ForbiddenException::class);
 
 it('throws NotFoundException on 404', function () {
@@ -73,5 +73,16 @@ it('throws RateLimitException on 429', function () {
 it('throws ServerException on 500', function () {
     Http::fake(['*' => Http::response(['message' => 'Server error.'], 500)]);
 
-    $this->client->get('/v1/organization');
+    $this->client->get('/v1/business');
+})->throws(ServerException::class);
+
+it('maps error responses to typed exceptions even when retry is enabled', function () {
+    // With retry > 0 the HTTP client must not throw a raw RequestException on
+    // an error response — it has to flow through to the SDK's exception mapping.
+    config()->set('hikbridge.retry', ['times' => 2, 'sleep' => 0]);
+    $client = new \Nugsoft\HikBridge\HikBridgeClient(config('hikbridge'));
+
+    Http::fake(['*' => Http::response(['message' => 'Service Unavailable.'], 503)]);
+
+    $client->get('/v1/business');
 })->throws(ServerException::class);
