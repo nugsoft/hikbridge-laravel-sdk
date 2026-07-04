@@ -3,10 +3,10 @@
 namespace Nugsoft\HikBridge;
 
 use Nugsoft\HikBridge\Resources\BiometricResource;
+use Nugsoft\HikBridge\Resources\BusinessResource;
 use Nugsoft\HikBridge\Resources\DeviceResource;
 use Nugsoft\HikBridge\Resources\EventResource;
 use Nugsoft\HikBridge\Resources\OperationResource;
-use Nugsoft\HikBridge\Resources\OrganizationResource;
 use Nugsoft\HikBridge\Resources\PersonResource;
 use Nugsoft\HikBridge\Resources\WebhookResource;
 
@@ -14,9 +14,9 @@ class HikBridgeManager
 {
     public function __construct(private readonly HikBridgeClient $client) {}
 
-    public function organization(): OrganizationResource
+    public function business(): BusinessResource
     {
-        return new OrganizationResource($this->client);
+        return new BusinessResource($this->client);
     }
 
     public function devices(): DeviceResource

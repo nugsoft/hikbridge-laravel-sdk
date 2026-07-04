@@ -49,10 +49,12 @@ class WebhookResource
     }
 
     /**
-     * List recent delivery attempts for a webhook.
+     * List recent delivery attempts for a webhook (paginated).
+     *
+     * Supported params: per_page, page.
      */
-    public function deliveries(int $webhookId): array
+    public function deliveries(int $webhookId, array $params = []): array
     {
-        return $this->client->get("/v1/webhooks/{$webhookId}/deliveries");
+        return $this->client->get("/v1/webhooks/{$webhookId}/deliveries", $params);
     }
 }

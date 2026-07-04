@@ -17,7 +17,7 @@ A Laravel SDK for the **HikBridge External Integration API** — a brand-agnosti
 - [Demo Project](#demo-project)
 - [Authentication & Scopes](#authentication--scopes)
 - [Resources](#resources)
-  - [Organization](#organization)
+  - [Business](#business)
   - [Devices](#devices)
   - [Persons](#persons)
   - [Biometrics](#biometrics)
@@ -70,7 +70,7 @@ return [
     // Base URL of the HikBridge API (no trailing slash needed)
     'base_url' => env('HIKBRIDGE_BASE_URL', 'https://devicebridge.blendsnpearls.com/api'),
 
-    // Per-organization API key (hbk_...) — sent as Authorization: Bearer on every request
+    // Per-business API key (hbk_...) — sent as Authorization: Bearer on every request
     'api_key' => env('HIKBRIDGE_API_KEY'),
 
     // HTTP timeout in seconds
@@ -94,7 +94,7 @@ The SDK exposes a single `HikBridge` facade. Every method group is accessed thro
 ```php
 use Nugsoft\HikBridge\Facades\HikBridge;
 
-HikBridge::organization()->get();
+HikBridge::business()->get();
 HikBridge::devices()->list();
 HikBridge::persons()->get(57);
 HikBridge::biometrics(57)->uploadFace(35, $base64);
@@ -131,7 +131,7 @@ Keys are scoped to a set of **abilities**. Attempting an endpoint the key is not
 
 | Ability             | Grants access to                               |
 | ------------------- | ---------------------------------------------- |
-| `organization:read` | `GET /v1/organization`                         |
+| `business:read`     | `GET /v1/business`                             |
 | `devices:read`      | `GET /v1/devices`, `GET /v1/devices/:id`       |
 | `persons:read`      | List, get, and poll operations                 |
 | `persons:write`     | Create, update, delete persons                 |
@@ -144,23 +144,23 @@ Keys are scoped to a set of **abilities**. Attempting an endpoint the key is not
 
 ## Resources
 
-### Organization
+### Business
 
-Returns the single organization the API key belongs to.
+Returns the single business the API key belongs to. Requires ability `business:read`.
 
 ```php
-$org = HikBridge::organization()->get();
-// $org['data']['id'], $org['data']['name'], ...
+$business = HikBridge::business()->get();
+// $business['data']['id'], $business['data']['name'], ...
 ```
 
 ---
 
 ### Devices
 
-Devices are the access-control units registered to the organization. Every biometric operation requires a `device_id` from this list.
+Devices are the access-control units registered to the business. Every biometric operation requires a `device_id` from this list.
 
 ```php
-// List all devices in the organization
+// List all devices in the business
 $devices = HikBridge::devices()->list();
 
 foreach ($devices['data'] as $device) {
@@ -177,7 +177,7 @@ $device = HikBridge::devices()->get(35);
 
 ### Persons
 
-Persons are the people managed across the organization's devices. `person_code` is the cross-system identifier — it must be unique, alphanumeric, max 16 characters, and is **immutable after creation**.
+Persons are the people managed across the business's devices. `person_code` is the cross-system identifier — it must be unique, alphanumeric, max 16 characters, and is **immutable after creation**.
 
 #### List persons
 
